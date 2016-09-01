@@ -49,6 +49,7 @@ using namespace std;
 		Deque_##t##_Iterator (*end)(Deque_##t *);						\
 		t& (*at)(Deque_##t *, int);								\
 		void (*clear)(Deque_##t *);								\
+		bool (*compare)(const t &, const t &);							\
 	};												\
 	int Deque_##t##_size(Deque_##t *deq) {								\
 		return deq->Size;									\
@@ -139,7 +140,7 @@ using namespace std;
 		if(deq1.Size == deq2.Size) {								\
 			int i;										\
 			for(i=0;i<deq1.Size;i++){							\
-				if(memcmp(&deq1, &deq2, sizeof(t)))					\
+				if(memcmp(&deq1.at(&deq1, i), &deq2.at(&deq2, i), sizeof(t)))		\
 					return 0;							\
 			}										\
 			return 1;									\
@@ -147,10 +148,10 @@ using namespace std;
 		}else											\
 			return 0;									\
 	}												\
-	void Deque_##t##_ctor(Deque_##t *deq) {								\
+	void Deque_##t##_ctor(Deque_##t *deq, bool (*fp)(const t &, const t &)) {			\
 		deq->Size = 0;										\
 		deq->length = 1;									\
-		deq->data = (t *)malloc(sizeof(t) * deq->length);					\
+		deq->data = (t *)calloc(deq->length, sizeof(t));					\
 		deq->front_pointer = 0;									\
 		deq->back_pointer = 0;									\
 		deq->size = &Deque_##t##_size; 								\
@@ -166,6 +167,7 @@ using namespace std;
 		deq->end = &Deque_##t##_end;								\
 		deq->at = &Deque_##t##_at;								\
 		deq->clear = &Deque_##t##_clear;							\
+		deq->compare = fp;									\
 	}												
 
 struct MyClass {
@@ -185,7 +187,7 @@ bool MyClass_less_by_id(const MyClass &o1, const MyClass &o2) {
 Deque_DEFINE(MyClass)
 int main() {
 	Deque_MyClass deq;
-	Deque_MyClass_ctor(&deq);
+        Deque_MyClass_ctor(&deq, MyClass_less_by_id);
 	cout<<"Size of deq: "<<deq.Size<<endl;
 	assert(deq.size(&deq) == 0);
 	assert(deq.empty(&deq));
@@ -252,31 +254,26 @@ int main() {
             assert(deq.back(&deq).id == 2);
             assert(it.deref(&it).id == 2); // Verify with iterator also.
         }
+
+	Deque_MyClass deq1, deq2;
+	Deque_MyClass_ctor(&deq1, MyClass_less_by_id);
+	Deque_MyClass_ctor(&deq2, MyClass_less_by_id);
+
+	deq1.push_back(&deq1, MyClass{1, "Joe"});
+	deq1.push_back(&deq1, MyClass{2, "Jane"});
+	deq1.push_back(&deq1, MyClass{3, "Mary"});
+	deq2.push_back(&deq2, MyClass{1, "Joe"});
+	deq2.push_back(&deq2, MyClass{2, "Jane"});
+	deq2.push_back(&deq2, MyClass{3, "Mary"});
+
+	assert(Deque_MyClass_equal(deq1, deq2));
+	deq1.pop_back(&deq1);
+	assert(!Deque_MyClass_equal(deq1, deq2));
+	deq1.push_back(&deq1, MyClass{4, "Mary"});
+	assert(!Deque_MyClass_equal(deq1, deq2));
+
+	deq1.clear(&deq1);
+	deq2.clear(&deq2);
 	deq.clear(&deq);
-        {
-	    cout<<"Eqalling two deq's"<<endl;
-            Deque_MyClass deq1, deq2;
-            Deque_MyClass_ctor(&deq1);
-            Deque_MyClass_ctor(&deq2);
-
-            deq1.push_back(&deq1, MyClass{1, "Joe"});
-            deq1.push_back(&deq1, MyClass{2, "Jane"});
-            deq1.push_back(&deq1, MyClass{3, "Mary"});
-            deq2.push_back(&deq2, MyClass{1, "Joe"});
-            deq2.push_back(&deq2, MyClass{2, "Jane"});
-            deq2.push_back(&deq2, MyClass{3, "Mary"});
-
-            assert(Deque_MyClass_equal(deq1, deq2));
-
-            deq1.pop_back(&deq1);
-            assert(!Deque_MyClass_equal(deq1, deq2));
-            deq1.push_back(&deq1, MyClass{4, "Mary"});
-            assert(!Deque_MyClass_equal(deq1, deq2));
-
-            deq1.clear(&deq1);
-            deq2.clear(&deq2);
-        }
-
-	
 }
 
