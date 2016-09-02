@@ -7,6 +7,7 @@ using namespace std;
 
 #define Deque_DEFINE(t)											\
 	struct Deque_##t;										\
+	void Deque_##t##_ctor(Deque_##t *, bool (*)(const t &, const t &));				\
 	struct Deque_##t##_Iterator {									\
 		Deque_##t *deq;										\
 		int index;										\
@@ -50,6 +51,7 @@ using namespace std;
 		t& (*at)(Deque_##t *, int);								\
 		void (*clear)(Deque_##t *);								\
 		bool (*compare)(const t &, const t &);							\
+		void (*dtor)(Deque_##t *);								\
 	};												\
 	int Deque_##t##_size(Deque_##t *deq) {								\
 		return deq->Size;									\
@@ -132,10 +134,6 @@ using namespace std;
 		index = (index + deq->front_pointer)%deq->length;					\
 		return deq->data[index];								\
 	}												\
-	void Deque_##t##_clear(Deque_##t *deq){								\
-		free(deq->data);									\
-		deq->data = NULL;									\
-	}												\
 	bool Deque_##t##_equal(Deque_##t deq1, Deque_##t deq2){						\
 		if(deq1.Size == deq2.Size) {								\
 			int i;										\
@@ -148,7 +146,15 @@ using namespace std;
 		}else											\
 			return 0;									\
 	}												\
+	void Deque_##t##_clear(Deque_##t *deq){								\
+		free(deq->data);									\
+		deq->data = NULL;									\
+		Deque_##t##_ctor(deq, deq->compare);							\
+	}												\
+	void Deque_##t##_dtor(Deque_##t *deq){								\
+	}												\
 	void Deque_##t##_ctor(Deque_##t *deq, bool (*fp)(const t &, const t &)) {			\
+		cout<<"Lenght of t is: "<<strlen("A_"t)<<endl;							\
 		deq->Size = 0;										\
 		deq->length = 1;									\
 		deq->data = (t *)calloc(deq->length, sizeof(t));					\
@@ -166,9 +172,10 @@ using namespace std;
 		deq->begin = &Deque_##t##_begin;							\
 		deq->end = &Deque_##t##_end;								\
 		deq->at = &Deque_##t##_at;								\
-		deq->clear = &Deque_##t##_clear;							\
 		deq->compare = fp;									\
-	}												
+		deq->clear = &Deque_##t##_clear;							\
+		deq->dtor = &Deque_##t##_dtor;								\
+	}
 
 struct MyClass {
 	int id;
@@ -196,6 +203,12 @@ int main() {
 	Deque_int deq;
         Deque_int_ctor(&deq, int_less);
 
+        for (Deque_int_Iterator it = deq.begin(&deq);
+         !Deque_int_Iterator_equal(it, deq.end(&deq)); it.inc(&it)) {
+            printf("%d\n", it.deref(&it));
+        }
+
+
         assert(deq.size(&deq) == 0);
         assert(deq.empty(&deq));
 
@@ -215,7 +228,7 @@ int main() {
         assert(deq.front(&deq) == 0);
         assert(deq.back(&deq) == 2);
         assert(deq.size(&deq) == 3);
-        for (Deque_int_Iterator it = deq.begin(&deq);
+       for (Deque_int_Iterator it = deq.begin(&deq);
          !Deque_int_Iterator_equal(it, deq.end(&deq)); it.inc(&it)) {
             printf("%d\n", it.deref(&it));
         }
@@ -229,7 +242,7 @@ int main() {
 
         printf("Using at.\n");
 
-        for (size_t i = 0; i < 3; i++) {
+       for (size_t i = 0; i < 3; i++) {
             printf("%d: %d\n", int(i), deq.at(&deq, i));
         }
 
@@ -251,17 +264,14 @@ int main() {
 
         deq1.pop_back(&deq1);
         assert(!Deque_int_equal(deq1, deq2));
-        deq1.push_back(&deq1, 3);
+        deq1.push_back(&deq1, 4);
         assert(!Deque_int_equal(deq1, deq2));
 
         deq1.clear(&deq1);
         deq2.clear(&deq2);
     }
-
-
+	//cout<<"name is: "<<deq.type_name<<endl;
         deq.clear(&deq);
-
-
 
 }
 
