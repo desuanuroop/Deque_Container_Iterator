@@ -66,7 +66,10 @@ using namespace std;
 		free(deq->data);									\
 		deq->data = (t *)malloc(sizeof(t) * (2 * deq->length));					\
 		if(leave){										\
-			index = deq->front_pointer+1;							\
+                        if(deq->front_pointer == deq->length-1)\
+                             index = (2* deq->length)-1;\
+                        else\
+			     index = deq->front_pointer+1;						\
 		}											\
 		else											\
 			index = deq->front_pointer;							\
@@ -74,14 +77,18 @@ using namespace std;
 			for(i=deq->front_pointer; i< deq->length;i++, index++)				\
 				deq->data[index] = deq->tmpdata[i];					\
 		}else {											\
-			for(i=deq->front_pointer; i< deq->length;i++,index++)				\
+			for(i=deq->front_pointer; i< deq->length;i++,index--)				\
 				deq->data[index] = deq->tmpdata[i];					\
-			for(i=0;i<=deq->back_pointer;i++, index++)					\
-				deq->data[index] = deq->tmpdata[i];					\
+			for(i=0;i<deq->back_pointer;i++, index++)					\
+				deq->data[i] = deq->tmpdata[i];					\
 		}											\
+		if(leave) {										\
+                        if(deq->front_pointer == deq->length-1)\
+                             deq->front_pointer = (2 * deq->length)-2;\
+                        else\
+                             deq->back_pointer++;	\
+                }\
 		deq->length = 2 * deq->length;								\
-		if(leave)										\
-			deq->back_pointer++;								\
 		free(deq->tmpdata);									\
 	}												\
 	void Deque_##t##_push_back(Deque_##t *deq,t ob){						\
@@ -96,8 +103,10 @@ using namespace std;
 		deq->Size++;										\
 	}												\
 	void Deque_##t##_push_front(Deque_##t *deq, t ob){						\
-		if(deq->front_pointer == 0 || deq->front_pointer-1 == deq->back_pointer)		\
-			deq->extend_array(deq,1);							\
+                if(deq->front_pointer ==0 && deq->Size != deq->length)                                  \
+                        deq->front_pointer = deq->length -1;                                            \
+		else if(deq->front_pointer == 0 || deq->front_pointer-1 == deq->back_pointer || (deq->front_pointer != 0 && deq->front_pointer == deq->back_pointer))		\
+			deq->extend_array(deq,1);					         	\
 		else											\
 			deq->front_pointer--;								\
 		memcpy(&deq->data[deq->front_pointer], &ob, sizeof(t));					\
@@ -108,12 +117,16 @@ using namespace std;
 			deq->back_pointer--;								\
 			deq->Size--;									\
 		}											\
+		if(deq->back_pointer == -1)								\
+			deq->back_pointer = deq->front_pointer + deq->Size+1;				\
 	}												\
 	void Deque_##t##_pop_front(Deque_##t *deq){							\
 		if(!deq->empty(deq)){									\
 			deq->front_pointer++;								\
 			deq->Size--;									\
 		}											\
+		if(deq->front_pointer >= deq->length)							\
+			deq->front_pointer = 0;								\
 	}												\
 	t& Deque_##t##_front(Deque_##t *deq){								\
 		return deq->data[deq->front_pointer];							\
@@ -131,7 +144,8 @@ using namespace std;
 		return Deque_##t##_Iterator{deq, deq->back_pointer, deq->length, &Deque_##t##_Iterator_inc, &Deque_##t##_Iterator_dec, &Deque_##t##_Iterator_deref};\
 	}												\
 	t& Deque_##t##_at(Deque_##t *deq, int index){							\
-		index = (index + deq->front_pointer)%deq->length;					\
+                if(deq->Size != 0)                                                                      \
+		     index = (index + deq->front_pointer)%deq->length;					\
 		return deq->data[index];								\
 	}												\
 	bool Deque_##t##_equal(Deque_##t deq1, Deque_##t deq2){						\
@@ -152,6 +166,8 @@ using namespace std;
 		Deque_##t##_ctor(deq, deq->compare);							\
 	}												\
 	void Deque_##t##_dtor(Deque_##t *deq){								\
+		free(deq->data);									\
+		deq->data = NULL;									\
 	}												\
 	void Deque_##t##_ctor(Deque_##t *deq, bool (*fp)(const t &, const t &)) {			\
 		deq->Size = 0;										\
@@ -175,102 +191,4 @@ using namespace std;
 		deq->clear = &Deque_##t##_clear;							\
 		deq->dtor = &Deque_##t##_dtor;								\
 	}
-
-struct MyClass {
-	int id;
-	char name[10];
-};
-
-void MyClass_print(const MyClass *o) {
-	printf("%d\n", o->id);
-	printf("%s\n", o->name);
-}
-
-bool MyClass_less_by_id(const MyClass &o1, const MyClass &o2) {
-    return o1.id < o2.id;
-}
-
-Deque_DEFINE(MyClass)
-
-bool
-int_less(const int &o1, const int &o2) {
-    return o1 < o2;
-}
-
-Deque_DEFINE(int)
-int main() {
-	Deque_int deq;
-        Deque_int_ctor(&deq, int_less);
-
-        for (Deque_int_Iterator it = deq.begin(&deq);
-         !Deque_int_Iterator_equal(it, deq.end(&deq)); it.inc(&it)) {
-            printf("%d\n", it.deref(&it));
-        }
-
-
-        assert(deq.size(&deq) == 0);
-        assert(deq.empty(&deq));
-
-        deq.push_back(&deq, 1);
-        deq.push_back(&deq, 2);
-        deq.push_back(&deq, 3);
-        deq.push_front(&deq, 0);
-        deq.push_front(&deq, -1);
-
-	printf("%d\n", deq.front(&deq));
-        printf("%d\n", deq.back(&deq));
-        assert(deq.front(&deq) == -1);
-        assert(deq.back(&deq) == 3);
-
-	deq.pop_front(&deq);
-        deq.pop_back(&deq);
-        assert(deq.front(&deq) == 0);
-        assert(deq.back(&deq) == 2);
-        assert(deq.size(&deq) == 3);
-       for (Deque_int_Iterator it = deq.begin(&deq);
-         !Deque_int_Iterator_equal(it, deq.end(&deq)); it.inc(&it)) {
-            printf("%d\n", it.deref(&it));
-        }
-
-        // Test decrement.
-        {
-            auto it = deq.end(&deq);
-            it.dec(&it);
-            assert(it.deref(&it) == 2);
-        }
-
-        printf("Using at.\n");
-
-       for (size_t i = 0; i < 3; i++) {
-            printf("%d: %d\n", int(i), deq.at(&deq, i));
-        }
-
-	    // Test equality.  It is undefined behavior if the two deques were constructed with different
-    // comparison functions.
-    {
-        Deque_int deq1, deq2;
-        Deque_int_ctor(&deq1, int_less);
-        Deque_int_ctor(&deq2, int_less);
-
-        deq1.push_back(&deq1, 1);
-        deq1.push_back(&deq1, 2);
-        deq1.push_back(&deq1, 3);
-        deq2.push_back(&deq2, 1);
-        deq2.push_back(&deq2, 2);
-        deq2.push_back(&deq2, 3);
-
-        assert(Deque_int_equal(deq1, deq2));
-
-        deq1.pop_back(&deq1);
-        assert(!Deque_int_equal(deq1, deq2));
-        deq1.push_back(&deq1, 4);
-        assert(!Deque_int_equal(deq1, deq2));
-
-        deq1.clear(&deq1);
-        deq2.clear(&deq2);
-    }
-	//cout<<"name is: "<<deq.type_name<<endl;
-        deq.clear(&deq);
-
-}
 
