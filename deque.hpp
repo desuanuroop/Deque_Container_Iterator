@@ -4,7 +4,7 @@
 #include <string.h>
 #include <assert.h>
 using namespace std;
-
+#define base_name "Deque_"
 #define Deque_DEFINE(t)											\
 	struct Deque_##t;										\
 	void Deque_##t##_ctor(Deque_##t *, bool (*)(const t &, const t &));				\
@@ -32,7 +32,7 @@ using namespace std;
 	struct Deque_##t {										\
 		t *data;										\
 		t *tmpdata;										\
-		char *type_name;									\
+		char type_name[strlen(base_name#t)+1];							\
 		int Size;										\
 		int length;										\
 		int front_pointer;									\
@@ -66,9 +66,9 @@ using namespace std;
 		free(deq->data);									\
 		deq->data = (t *)malloc(sizeof(t) * (2 * deq->length));					\
 		if(leave){										\
-                        if(deq->front_pointer == deq->length-1)\
-                             index = (2* deq->length)-1;\
-                        else\
+                        if(deq->front_pointer == deq->length-1)						\
+                             index = (2* deq->length)-1;						\
+                        else										\
 			     index = deq->front_pointer+1;						\
 		}											\
 		else											\
@@ -80,14 +80,14 @@ using namespace std;
 			for(i=deq->front_pointer; i< deq->length;i++,index--)				\
 				deq->data[index] = deq->tmpdata[i];					\
 			for(i=0;i<deq->back_pointer;i++, index++)					\
-				deq->data[i] = deq->tmpdata[i];					\
+				deq->data[i] = deq->tmpdata[i];						\
 		}											\
 		if(leave) {										\
-                        if(deq->front_pointer == deq->length-1)\
-                             deq->front_pointer = (2 * deq->length)-2;\
-                        else\
-                             deq->back_pointer++;	\
-                }\
+                        if(deq->front_pointer == deq->length-1)						\
+                             deq->front_pointer = (2 * deq->length)-2;					\
+                        else										\
+                             deq->back_pointer++;							\
+                }											\
 		deq->length = 2 * deq->length;								\
 		free(deq->tmpdata);									\
 	}												\
@@ -170,8 +170,9 @@ using namespace std;
 		deq->data = NULL;									\
 	}												\
 	void Deque_##t##_ctor(Deque_##t *deq, bool (*fp)(const t &, const t &)) {			\
+		strcpy(deq->type_name, base_name#t);\
 		deq->Size = 0;										\
-		deq->length = 1;									\
+		deq->length = 10;									\
 		deq->data = (t *)calloc(deq->length, sizeof(t));					\
 		deq->front_pointer = 0;									\
 		deq->back_pointer = 0;									\
