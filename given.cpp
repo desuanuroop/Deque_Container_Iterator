@@ -8,7 +8,7 @@
 #include <stdio.h>
 #include <random>
 #include <unistd.h>
-#include "Deque.hpp"
+#include "deque.hpp"
 
 // May assume memcpy()-able.
 // May assume = operator.
@@ -73,26 +73,36 @@ calloc(size_t num, size_t size) noexcept {
     return ptr;
 }
 
+/*
+ * Test for class MyClass.
+ */
+
 struct MyClass {
-	int id;
-	char name[10];
+    int id;
+  char name[10];
 };
 
-void MyClass_print(const MyClass *o) {
-	printf("%d\n", o->id);
-	printf("%s\n", o->name);
+bool
+MyClass_less_by_id(const MyClass &o1, const MyClass &o2) {
+    return o1.id < o2.id;
 }
 
-bool MyClass_less_by_id(const MyClass &o1, const MyClass &o2) {
-    return o1.id < o2.id;
+void
+MyClass_print(const MyClass *o) {
+    printf("%d\n", o->id);
+    printf("%s\n", o->name);
 }
 
 Deque_DEFINE(MyClass)
 
-bool int_less(const int &o1, const int &o2) {
+/*
+ * Test for int.
+ */
+
+bool
+int_less(const int &o1, const int &o2) {
     return o1 < o2;
 }
-
 Deque_DEFINE(int)
 
 int

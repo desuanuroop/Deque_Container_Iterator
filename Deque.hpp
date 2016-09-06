@@ -149,11 +149,13 @@ using namespace std;
 		return deq->data[index];								\
 	}												\
 	bool Deque_##t##_equal(Deque_##t deq1, Deque_##t deq2){						\
-		if(deq1.Size == deq2.Size) {								\
-			int i;										\
+		if(deq1.Size == deq2.Size && deq1.Size != 0) {						\
+			int i, index1, index2;								\
 			for(i=0;i<deq1.Size;i++){							\
-				if(memcmp(&deq1.at(&deq1, i), &deq2.at(&deq2, i), sizeof(t)))		\
-					return 0;							\
+					index1 = (i + deq1.front_pointer)%deq1.length;			\
+					index2 = (i + deq2.front_pointer)%deq2.length;			\
+					if(deq1.compare(deq1.data[index1], deq2.data[index2]) || deq1.compare(deq2.data[index2], deq1.data[index1]))\
+						return 0;						\
 			}										\
 			return 1;									\
 													\
